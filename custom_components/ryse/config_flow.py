@@ -57,6 +57,8 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 _LOGGER.debug("Attempting to pair with BLE device: %s (%s)", device_name, device_address)
 
+                command = ["bluetoothctl", "trust", device_address]
+                result = subprocess.run(command, capture_output=True, text=True, check=True)
                 # Start bluetoothctl in interactive mode
                 process = subprocess.Popen(
                     ["bluetoothctl"],
@@ -75,6 +77,19 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         await client.connect()
                         if client.is_connected:
                             _LOGGER.debug(f"Connected to {device_address}")
+
+                            # Pairing (Only required if your device needs pairing)
+                            try:
+                                paired = await client.pair()
+                                if not paired:
+                                    _LOGGER.error("Failed to pair with BLE device: %s (%s)", device_name, device_address)
+                                    close_process(process)
+                                    return self.async_abort(reason="Pairing failed!")
+                                else:
+                                    _LOGGER.debug("Paired successfully")
+                                    break  # Exit the retry loop on success
+                            except Exception as e:
+                                _LOGGER.warning(f"Pairing failed: {e}")
                         else:
                             _LOGGER.error("Failed to connect")
                             close_process(process)
