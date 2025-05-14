@@ -22,6 +22,51 @@ def close_process(process):
     process.stderr.close()
     process.wait()
 
+def run_command(command):
+    """Run a bluetoothctl command and return the output."""
+    result = subprocess.run(["bluetoothctl"] + command.split(), capture_output=True, text=True)
+    return result.stdout
+
+def start_bluetoothctl():
+    """Start bluetoothctl as an interactive process."""
+    return subprocess.Popen(
+        ["bluetoothctl"],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        bufsize=1024
+    )
+
+async def send_command_in_process(process, command, delay=2):
+    """Send a command to the bluetoothctl process and wait for a response."""
+    process.stdin.write(f"{command}\n")
+    process.stdin.flush()
+    await asyncio.sleep(delay)
+
+def is_device_connected(address):
+    """Check if a Bluetooth device is connected by its MAC address."""
+    cmdout = run_command("devices Connected")
+    target_address = address.lower()
+
+    for line in cmdout.splitlines():
+        # Check if line starts with "Device" followed by MAC address
+        if line.lower().startswith("device " + target_address):
+            return True
+    return False
+
+def is_device_bonded(address):
+    """Check if a Bluetooth device is bonded by its MAC address."""
+    cmdout = run_command("devices Bonded")
+    target_address = address.lower()
+
+    for line in cmdout.splitlines():
+        # Check if line starts with "Device" followed by MAC address
+        if line.lower().startswith("device " + target_address):
+            return True
+    return False
+
+
 class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for RYSE BLE Device."""
 
@@ -57,53 +102,34 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 _LOGGER.debug("Attempting to pair with BLE device: %s (%s)", device_name, device_address)
 
-                # Start bluetoothctl in interactive mode
-                process = subprocess.Popen(
-                    ["bluetoothctl"],
-                    stdin=subprocess.PIPE,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                    bufsize=1
-                )
-
                 max_retries = 3
                 retry_count = 0
                 while retry_count < max_retries:
                     try:
-                        client = BleakClient(device_address)
-                        await client.connect()
-                        if client.is_connected:
-                            _LOGGER.debug(f"Connected to {device_address}")
+                        # Start bluetoothctl in interactive mode
+                        process = start_bluetoothctl()
+                        await send_command_in_process(process, f"trust {device_address}", delay=1)
+                        await send_command_in_process(process, f"connect {device_address}", delay=7)
+                        await send_command_in_process(process, "exit", delay=1)
+                        close_process(process)
 
-                            # Pairing (Only required if your device needs pairing)
-                            try:
-                                paired = await client.pair()
-                                if not paired:
-                                    _LOGGER.error("Failed to pair with BLE device: %s (%s)", device_name, device_address)
-                                    close_process(process)
-                                    return self.async_abort(reason="Pairing failed!")
-                                else:
-                                    _LOGGER.debug("Paired successfully")
-                                    break  # Exit the retry loop on success
-                            except Exception as e:
-                                _LOGGER.warning(f"Pairing failed: {e}")
+                        if is_device_connected(device_address) and is_device_bonded(device_address) :
+                            _LOGGER.debug(f"Connected and Bonded to {device_address}")
+                            break
                         else:
-                            _LOGGER.error("Failed to connect")
-                            close_process(process)
-                            return False
+                            _LOGGER.error(f"Failed to connect and bond(attempt {retry_count + 1})")
+                            retry_count += 1
+                            if retry_count >= max_retries:
+                                return False
+                            await asyncio.sleep(3)  # Wait before retrying
                     except Exception as e:
                         _LOGGER.error(f"Connection error (attempt {retry_count + 1}): {e}")
                         retry_count += 1
                         if retry_count >= max_retries:
-                            close_process(process)
                             return False
                         await asyncio.sleep(3)  # Wait before retrying
 
-                await asyncio.sleep(5)
-                close_process(process)
-
-                _LOGGER.debug("Successfully paired with BLE device: %s (%s)", device_name, device_address)
+                _LOGGER.debug("Successfully Connected and Bonded with BLE device: %s (%s)", device_name, device_address)
 
                 # Create entry after successful pairing
                 return self.async_create_entry(
