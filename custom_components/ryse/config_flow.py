@@ -66,6 +66,16 @@ def is_device_bonded(address):
             return True
     return False
 
+def is_device_paired(address):
+    """Check if a Bluetooth device is paired by its MAC address."""
+    cmdout = run_command("devices Paired")
+    target_address = address.lower()
+
+    for line in cmdout.splitlines():
+        # Check if line starts with "Device" followed by MAC address
+        if line.lower().startswith("device " + target_address):
+            return True
+    return False
 
 class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for RYSE BLE Device."""
@@ -109,15 +119,17 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         # Start bluetoothctl in interactive mode
                         process = start_bluetoothctl()
                         await send_command_in_process(process, f"trust {device_address}", delay=1)
+                        await send_command_in_process(process, f"pair {device_address}", delay=7)
                         await send_command_in_process(process, f"connect {device_address}", delay=7)
                         await send_command_in_process(process, "exit", delay=1)
                         close_process(process)
 
-                        if is_device_connected(device_address) and is_device_bonded(device_address) :
-                            _LOGGER.debug(f"Connected and Bonded to {device_address}")
+                        if is_device_connected(device_address) and is_device_bonded(device_address) and is_device_paired(device_address) :
+                            _LOGGER.debug(f"Connected, Paired and Bonded to {device_address}")
                             break
                         else:
                             _LOGGER.error(f"Failed to connect and bond(attempt {retry_count + 1})")
+                            _LOGGER.error(f"Connected? {is_device_connected(device_address)} \t Paired? {is_device_paired(device_address)} \t Bonded? {is_device_bonded(device_address)}")
                             retry_count += 1
                             if retry_count >= max_retries:
                                 return False
