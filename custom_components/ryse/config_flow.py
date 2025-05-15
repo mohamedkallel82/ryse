@@ -119,8 +119,9 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         # Start bluetoothctl in interactive mode
                         process = start_bluetoothctl()
                         await send_command_in_process(process, f"trust {device_address}", delay=1)
-                        await send_command_in_process(process, f"pair {device_address}", delay=7)
                         await send_command_in_process(process, f"connect {device_address}", delay=7)
+                        if is_device_connected(device_address) and not is_device_paired(device_address) :
+                            await send_command_in_process(process, f"pair {device_address}", delay=7)
                         await send_command_in_process(process, "exit", delay=1)
                         close_process(process)
 
