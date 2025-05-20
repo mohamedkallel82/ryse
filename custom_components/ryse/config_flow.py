@@ -49,10 +49,14 @@ def is_device_connected(address):
     cmdout = run_command("devices Connected")
     target_address = address.lower()
 
+    _LOGGER.debug(f"(01) -------- Connected output: {cmdout}")
+
     for line in cmdout.splitlines():
         # Check if line starts with "Device" followed by MAC address
         if line.lower().startswith("device " + target_address):
+            _LOGGER.debug(f"(01) --------- Connected true")
             return True
+    _LOGGER.debug(f"(01) --------- Connected false")
     return False
 
 def is_device_bonded(address):
@@ -60,10 +64,14 @@ def is_device_bonded(address):
     cmdout = run_command("devices Bonded")
     target_address = address.lower()
 
+    _LOGGER.debug(f"(02) --------- Bonded output: {cmdout}")
+
     for line in cmdout.splitlines():
         # Check if line starts with "Device" followed by MAC address
         if line.lower().startswith("device " + target_address):
+            _LOGGER.debug(f"(02) --------- Bonded true")
             return True
+    _LOGGER.debug(f"(02) --------- Bonded false")
     return False
 
 def is_device_paired(address):
@@ -71,10 +79,14 @@ def is_device_paired(address):
     cmdout = run_command("devices Paired")
     target_address = address.lower()
 
+    _LOGGER.debug(f"(03) --------- Paired output: {cmdout}")
+
     for line in cmdout.splitlines():
         # Check if line starts with "Device" followed by MAC address
         if line.lower().startswith("device " + target_address):
+            _LOGGER.debug(f"(03) --------- Paired true")
             return True
+    _LOGGER.debug(f"(03) --------- Paired false")
     return False
 
 class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -118,12 +130,16 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     try:
                         # Start bluetoothctl in interactive mode
                         process = start_bluetoothctl()
+                        _LOGGER.debug(f"(1) --------- trust")
                         await send_command_in_process(process, f"trust {device_address}", delay=1)
+                        _LOGGER.debug(f"(2) --------- connect")
                         await send_command_in_process(process, f"connect {device_address}", delay=7)
                         if is_device_connected(device_address) and not is_device_paired(device_address) :
+                            _LOGGER.debug(f"(3) --------- pair")
                             await send_command_in_process(process, f"pair {device_address}", delay=7)
                         await send_command_in_process(process, "exit", delay=1)
                         close_process(process)
+                        _LOGGER.debug(f"(4) --------- finish")
 
                         if is_device_connected(device_address) and is_device_bonded(device_address) and is_device_paired(device_address) :
                             _LOGGER.debug(f"Connected, Paired and Bonded to {device_address}")
