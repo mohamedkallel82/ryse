@@ -6,7 +6,7 @@
   "dependencies": ["bluetooth_adapters"],
   "integration_type": "device",
   "codeowners": ["@ryse_github"],
-  "requirements": ["bleak==0.22.3"],
+  "requirements": ["bleak"],
   "iot_class": "local_push",
   "config_flow": true,
   "bluetooth": [],

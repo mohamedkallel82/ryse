@@ -4,6 +4,7 @@ import logging
 from bleak import BleakScanner, BleakClient
 import subprocess
 import asyncio
+import re
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -77,6 +78,40 @@ def is_device_paired(address):
             return True
     return False
 
+async def get_first_manufacturer_data_byte(mac_address: str) -> int:
+    """
+    Returns the first byte of ManufacturerData.Value for a BLE device using bluetoothctl.
+    Returns None if not found.
+    """
+    # Run bluetoothctl info and capture output
+    cmd = ["bluetoothctl", "info", mac_address]
+    proc = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    
+    # Wait for completion (timeout: 10 sec)
+    try:
+        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=10)
+    except asyncio.TimeoutError:
+        proc.kill()
+        await proc.wait()
+        _LOGGER.error("bluetoothctl command timed out")
+        return None
+    
+    # Parse output
+    lines = stdout.decode().splitlines()
+
+    for i, line in enumerate(lines):
+        if "ManufacturerData.Value" in line:
+            # The next line contains the hex bytes (e.g., "cc 64 62 64")
+            if (i+1) < len(lines):
+                hex_str = re.search(r"([0-9a-fA-F]{2})", lines[i+1].strip())
+                if hex_str:
+                    return int(hex_str.group(1), 16)
+    return None
+
 class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for RYSE BLE Device."""
 
@@ -119,7 +154,8 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         # Start bluetoothctl in interactive mode
                         process = start_bluetoothctl()
                         await send_command_in_process(process, f"trust {device_address}", delay=1)
-                        await send_command_in_process(process, f"connect {device_address}", delay=7)
+                        await send_command_in_process(process, f"connect {device_address}", delay=2)
+                        await send_command_in_process(process, f"yes", delay=7)
                         if is_device_connected(device_address) and not is_device_paired(device_address) :
                             await send_command_in_process(process, f"pair {device_address}", delay=7)
                         await send_command_in_process(process, "exit", delay=1)
@@ -177,12 +213,13 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 _LOGGER.debug("Skipping already configured device: %s (%s)", device.name, device.address)
                 continue  # Skip already configured devices
 
-            manufacturer_data = device.metadata.get("manufacturer_data", {})
+            manufacturer_data = device.details['props'].get('ManufacturerData', {})
             raw_data = manufacturer_data.get(0x0409)  # 0x0409 == 1033
-            if raw_data != None:
-                _LOGGER.debug("Found RYSE Device in Pairing mode: %s - address: %s", device.name, device.address)
+            if raw_data is not None:
+                btctlMfgdata0 = await get_first_manufacturer_data_byte(device.address)
+                _LOGGER.debug("Found RYSE Device in Pairing mode: %s - address: %s - btctlMfgdata0 %02X", device.name, device.address, btctlMfgdata0)
                 # Check if the pairing mode flag (0x40) is in the first byte
-                if len(raw_data) > 0 and (raw_data[0] & 0x40):
+                if len(raw_data) > 0 and btctlMfgdata0 is not None and (btctlMfgdata0 & 0x40):
                     self.device_options[device.address] = f"{device.name} ({device.address})"
 
         if not self.device_options:
