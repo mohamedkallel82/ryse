@@ -23,10 +23,30 @@ def close_process(process):
     process.stderr.close()
     process.wait()
 
-def run_command(command):
+async def run_command(command):
     """Run a bluetoothctl command and return the output."""
-    result = subprocess.run(["bluetoothctl"] + command.split(), capture_output=True, text=True)
-    return result.stdout
+    proc = await asyncio.create_subprocess_exec(
+        "bluetoothctl",
+        *command.split(),
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    
+    try:
+        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=10.0)
+        return {
+            'stdout': stdout,
+            'stderr': stderr,
+            'returncode': proc.returncode
+        }
+    except asyncio.TimeoutError:
+        proc.kill()
+        await proc.wait()
+        raise TimeoutError(f"bluetoothctl command timed out: {command}")
+    except Exception as e:
+        proc.kill()
+        await proc.wait()
+        raise RuntimeError(f"Command failed: {command} - {str(e)}")
 
 def start_bluetoothctl():
     """Start bluetoothctl as an interactive process."""
@@ -45,36 +65,36 @@ async def send_command_in_process(process, command, delay=2):
     process.stdin.flush()
     await asyncio.sleep(delay)
 
-def is_device_connected(address):
+async def is_device_connected(address):
     """Check if a Bluetooth device is connected by its MAC address."""
-    cmdout = run_command("devices Connected")
-    target_address = address.lower()
+    cmdout = await run_command("devices Connected")
+    target_address = address.lower().encode()
 
-    for line in cmdout.splitlines():
+    for line in cmdout['stdout'].splitlines():
         # Check if line starts with "Device" followed by MAC address
-        if line.lower().startswith("device " + target_address):
+        if line.lower().startswith(b"device " + target_address):
             return True
     return False
 
-def is_device_bonded(address):
+async def is_device_bonded(address):
     """Check if a Bluetooth device is bonded by its MAC address."""
-    cmdout = run_command("devices Bonded")
-    target_address = address.lower()
+    cmdout = await run_command("devices Bonded")
+    target_address = address.lower().encode()
 
-    for line in cmdout.splitlines():
+    for line in cmdout['stdout'].splitlines():
         # Check if line starts with "Device" followed by MAC address
-        if line.lower().startswith("device " + target_address):
+        if line.lower().startswith(b"device " + target_address):
             return True
     return False
 
-def is_device_paired(address):
+async def is_device_paired(address):
     """Check if a Bluetooth device is paired by its MAC address."""
-    cmdout = run_command("devices Paired")
-    target_address = address.lower()
+    cmdout = await run_command("devices Paired")
+    target_address = address.lower().encode()
 
-    for line in cmdout.splitlines():
+    for line in cmdout['stdout'].splitlines():
         # Check if line starts with "Device" followed by MAC address
-        if line.lower().startswith("device " + target_address):
+        if line.lower().startswith(b"device " + target_address):
             return True
     return False
 
@@ -156,17 +176,23 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         await send_command_in_process(process, f"trust {device_address}", delay=1)
                         await send_command_in_process(process, f"connect {device_address}", delay=2)
                         await send_command_in_process(process, f"yes", delay=7)
-                        if is_device_connected(device_address) and not is_device_paired(device_address) :
+                        idc = await is_device_connected(device_address)
+                        idp = await is_device_paired(device_address)
+                        if idc and not idp :
                             await send_command_in_process(process, f"pair {device_address}", delay=7)
                         await send_command_in_process(process, "exit", delay=1)
                         close_process(process)
 
-                        if is_device_connected(device_address) and is_device_bonded(device_address) and is_device_paired(device_address) :
+                        idc = await is_device_connected(device_address)
+                        idb = await is_device_bonded(device_address)
+                        idp = await is_device_paired(device_address)
+
+                        if idc and idb and idp :
                             _LOGGER.debug(f"Connected, Paired and Bonded to {device_address}")
                             break
                         else:
                             _LOGGER.error(f"Failed to connect and bond(attempt {retry_count + 1})")
-                            _LOGGER.error(f"Connected? {is_device_connected(device_address)} \t Paired? {is_device_paired(device_address)} \t Bonded? {is_device_bonded(device_address)}")
+                            _LOGGER.error(f"Connected? {idc} \t Paired? {idp} \t Bonded? {idb}")
                             retry_count += 1
                             if retry_count >= max_retries:
                                 return False
