@@ -45,6 +45,16 @@ class SmartShadeCover(CoverEntity):
         # Register the callback
         self._device.update_callback = self._update_position
 
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(self._device.address,)},
+            "name": f"Smart Shade {self._device.address}",
+            "manufacturer": "RYSE",
+            "model": "SmartShade BLE",
+            "connections": {("bluetooth", self._device.address)},
+        }
+
     async def _update_position(self, position):
         """Update cover position when receiving notification."""
         if 0 <= position <= 100:
