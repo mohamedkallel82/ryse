@@ -8,10 +8,12 @@ _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = "ryse"
 
+
 async def async_setup(hass: HomeAssistant, config: dict):
     """Set up the RYSE component."""
     _LOGGER.debug("Setting up RYSE Device integration")
     return True
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Set up RYSE from a config entry."""

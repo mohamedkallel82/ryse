@@ -4,9 +4,13 @@ import logging
 
 _LOGGER = logging.getLogger(__name__)
 
+
 async def async_setup_entry(hass, entry, async_add_entities):
-    device = RyseBLEDevice(entry.data['address'], entry.data['rx_uuid'], entry.data['tx_uuid'])
+    device = RyseBLEDevice(
+        entry.data["address"], entry.data["rx_uuid"], entry.data["tx_uuid"]
+    )
     async_add_entities([SmartShadeCover(device)])
+
 
 def build_position_packet(pos: int) -> bytes:
     """Convert MAC address to reversed hex array, prepend a prefix with a position last byte, and append a checksum."""
@@ -23,6 +27,7 @@ def build_position_packet(pos: int) -> bytes:
     # Append checksum
     return data_bytes + bytes([checksum])
 
+
 def build_get_position_packet() -> bytes:
     """Build raw data to send to the RYSE ble device to retrieve current position"""
 
@@ -33,6 +38,7 @@ def build_get_position_packet() -> bytes:
 
     # Append checksum
     return data_bytes + bytes([checksum])
+
 
 class SmartShadeCover(CoverEntity):
     def __init__(self, device):
@@ -110,15 +116,16 @@ class SmartShadeCover(CoverEntity):
         if self._current_position is None:
             return 50
         if not (0 <= self._current_position <= 100):
-            _LOGGER.warning(f"Invalid position value detected: {self._current_position}")
+            _LOGGER.warning(
+                f"Invalid position value detected: {self._current_position}"
+            )
             return 50  # Prevent invalid values
         return int(self._current_position)
 
     @property
     def supported_features(self):
         return (
-            CoverEntityFeature.OPEN |
-            CoverEntityFeature.CLOSE |
-            CoverEntityFeature.SET_POSITION
+            CoverEntityFeature.OPEN
+            | CoverEntityFeature.CLOSE
+            | CoverEntityFeature.SET_POSITION
         )
-

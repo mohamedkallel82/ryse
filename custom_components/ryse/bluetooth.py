@@ -4,6 +4,7 @@ import logging
 
 _LOGGER = logging.getLogger(__name__)
 
+
 class RyseBLEDevice:
     def __init__(self, address=None, rx_uuid=None, tx_uuid=None):
         self.address = address
@@ -25,18 +26,22 @@ class RyseBLEDevice:
                 await self.client.start_notify(self.rx_uuid, self._notification_handler)
                 return True
         except Exception as e:
-            _LOGGER.error(f"Error pairing with device {self.address}: {e}", exc_info=True)
+            _LOGGER.error(
+                f"Error pairing with device {self.address}: {e}", exc_info=True
+            )
         return False
 
     async def _notification_handler(self, sender, data):
         """Callback function for handling received BLE notifications."""
         if len(data) >= 5 and data[0] == 0xF5 and data[2] == 0x01 and data[3] == 0x18:
-            #ignore REPORT USER TARGET data
+            # ignore REPORT USER TARGET data
             return
         _LOGGER.debug(f"Received notification")
         if len(data) >= 5 and data[0] == 0xF5 and data[2] == 0x01 and data[3] == 0x07:
             new_position = data[4]  # Extract the position byte
-            _LOGGER.debug(f"Received valid notification, updating position: {new_position}")
+            _LOGGER.debug(
+                f"Received valid notification, updating position: {new_position}"
+            )
 
             # Notify cover.py about the position update
             if hasattr(self, "update_callback"):
@@ -62,7 +67,7 @@ class RyseBLEDevice:
         if self.client:
             data = await self.client.read_gatt_char(self.rx_uuid)
             if len(data) < 5 or data[0] != 0xF5 or data[2] != 0x01 or data[3] != 0x18:
-                #ignore REPORT USER TARGET data
+                # ignore REPORT USER TARGET data
                 _LOGGER.debug(f"Received Position Report Data")
                 return data
             return None
@@ -78,7 +83,9 @@ class RyseBLEDevice:
         for device in devices:
             _LOGGER.debug(f"Found device: {device.name} ({device.address})")
             if device.name and "target-device-name" in device.name.lower():
-                _LOGGER.debug(f"Attempting to pair with {device.name} ({device.address})")
+                _LOGGER.debug(
+                    f"Attempting to pair with {device.name} ({device.address})"
+                )
                 self.address = device.address
                 return await self.pair()
         _LOGGER.warning("No suitable devices found to pair")
