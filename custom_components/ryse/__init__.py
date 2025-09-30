@@ -2,7 +2,7 @@ import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from custom_components.ryse.bluetooth import RyseBLEDevice
+from ryseble.device import RyseBLEDevice
 
 _LOGGER = logging.getLogger(__name__)
 

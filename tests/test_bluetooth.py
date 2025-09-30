@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock, patch
-from custom_components.ryse.bluetooth import RyseBLEDevice
+from ryseble.device import RyseBLEDevice
 
 @pytest.fixture
 def mock_ble_client():
