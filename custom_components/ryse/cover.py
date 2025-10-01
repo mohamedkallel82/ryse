@@ -1,10 +1,11 @@
-from homeassistant.components.cover import CoverEntity, CoverEntityFeature
-from ryseble.device import RyseBLEDevice
 import logging
+
+from homeassistant.components.cover import CoverEntity, CoverEntityFeature
+
 from ryseble.packets import build_position_packet, build_get_position_packet
+from ryseble.device import RyseBLEDevice
 
 _LOGGER = logging.getLogger(__name__)
-
 
 async def async_setup_entry(hass, entry, async_add_entities):
     device = RyseBLEDevice(
@@ -45,14 +46,14 @@ class SmartShadeCover(CoverEntity):
         """Open the shade."""
         pdata = build_position_packet(0x00)
         await self._device.write_data(pdata)
-        _LOGGER.debug(f"Binary packet to change position to open")
+        _LOGGER.debug("Binary packet to change position to open")
         self._state = "open"
 
     async def async_close_cover(self, **kwargs):
         """Close the shade."""
         pdata = build_position_packet(0x64)
         await self._device.write_data(pdata)
-        _LOGGER.debug(f"Binary packet to change position to close")
+        _LOGGER.debug("Binary packet to change position to close")
         self._state = "closed"
 
     async def async_set_cover_position(self, **kwargs):
@@ -60,7 +61,7 @@ class SmartShadeCover(CoverEntity):
         position = 100 - kwargs.get("position", 0)
         pdata = build_position_packet(position)
         await self._device.write_data(pdata)
-        _LOGGER.debug(f"Binary packet to change position to a specific position")
+        _LOGGER.debug("Binary packet to change position to a specific position")
         self._state = "open" if position < 100 else "closed"
 
     async def async_update(self):
@@ -88,9 +89,7 @@ class SmartShadeCover(CoverEntity):
         if self._current_position is None:
             return 50
         if not (0 <= self._current_position <= 100):
-            _LOGGER.warning(
-                f"Invalid position value detected: {self._current_position}"
-            )
+            _LOGGER.warning(f"Invalid position value detected: {self._current_position}")
             return 50  # Prevent invalid values
         return int(self._current_position)
 

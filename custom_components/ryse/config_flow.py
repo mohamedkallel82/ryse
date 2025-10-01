@@ -1,23 +1,14 @@
-from homeassistant import config_entries
 import voluptuous as vol
 import logging
-from bleak import BleakScanner, BleakClient
-import subprocess
-import asyncio
-import re
+from bleak import BleakScanner
+
+from homeassistant import config_entries
 
 from ryseble.bluetoothctl import (
-    close_process,
-    run_command,
-    start_bluetoothctl,
-    send_command_in_process,
-    is_device_connected,
-    is_device_bonded,
-    is_device_paired,
-    get_first_manufacturer_data_byte,
+    pair_with_ble_device,
+    filter_ryse_devices_pairing,
 )
 from ryseble.constants import HARDCODED_UUIDS
-
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -64,69 +55,13 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             device_address = user_input["device_address"]
 
             try:
-                _LOGGER.debug(
-                    "Attempting to pair with BLE device: %s (%s)",
-                    device_name,
-                    device_address,
-                )
+                _LOGGER.debug(f"Attempting to pair with BLE device: {device_name} ({device_address})")
 
-                max_retries = 3
-                retry_count = 0
-                while retry_count < max_retries:
-                    try:
-                        # Start bluetoothctl in interactive mode
-                        process = start_bluetoothctl()
-                        await send_command_in_process(
-                            process, f"trust {device_address}", delay=1
-                        )
-                        await send_command_in_process(
-                            process, f"connect {device_address}", delay=2
-                        )
-                        await send_command_in_process(process, f"yes", delay=7)
-                        idc = await is_device_connected(device_address)
-                        idp = await is_device_paired(device_address)
-                        if idc and not idp:
-                            await send_command_in_process(
-                                process, f"pair {device_address}", delay=7
-                            )
-                        await send_command_in_process(process, "exit", delay=1)
-                        close_process(process)
+                success = await pair_with_ble_device(device_name, device_address)
+                if not success:
+                    return self.async_abort(reason="Pairing failed!")
 
-                        idc = await is_device_connected(device_address)
-                        idb = await is_device_bonded(device_address)
-                        idp = await is_device_paired(device_address)
-
-                        if idc and idb and idp:
-                            _LOGGER.debug(
-                                f"Connected, Paired and Bonded to {device_address}"
-                            )
-                            break
-                        else:
-                            _LOGGER.error(
-                                f"Failed to connect and bond(attempt {retry_count + 1})"
-                            )
-                            _LOGGER.error(
-                                f"Connected? {idc} \t Paired? {idp} \t Bonded? {idb}"
-                            )
-                            retry_count += 1
-                            if retry_count >= max_retries:
-                                return False
-                            await asyncio.sleep(3)  # Wait before retrying
-                    except Exception as e:
-                        _LOGGER.error(
-                            f"Connection error (attempt {retry_count + 1}): {e}"
-                        )
-                        retry_count += 1
-                        if retry_count >= max_retries:
-                            return False
-                        await asyncio.sleep(3)  # Wait before retrying
-
-                _LOGGER.debug(
-                    "Successfully Connected and Bonded with BLE device: %s (%s)",
-                    device_name,
-                    device_address,
-                )
-
+                _LOGGER.debug(f"Successfully Connected and Bonded with BLE device: {device_name} ({device_address})")
                 # Create entry after successful pairing
                 return self.async_create_entry(
                     title=f"RYSE gear {device_name}",
@@ -137,12 +72,7 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
 
             except Exception as e:
-                _LOGGER.error(
-                    "Error during pairing process for BLE device: %s (%s): %s",
-                    device_name,
-                    device_address,
-                    e,
-                )
+                _LOGGER.error(f"Error during pairing process for BLE device: {device_name} ({device_address}): {e}")
                 return self.async_abort(reason="Pairing failed!")
 
         # Scan for BLE devices
@@ -150,49 +80,16 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         # Debug: Log all discovered devices
         for device in devices:
-            _LOGGER.debug(
-                "Device Name: %s - Device Address: %s", device.name, device.address
-            )
+            _LOGGER.debug(f"Device Name: {device.name} - Device Address: {device.address}")
 
         # Get existing entries to exclude already configured devices
         existing_entries = self._async_current_entries()
         existing_addresses = {entry.data["address"] for entry in existing_entries}
 
-        self.device_options = {}
-
-        for device in devices:
-            if not device.name:
-                continue  # Ignore unnamed devices
-            if device.address in existing_addresses:
-                _LOGGER.debug(
-                    "Skipping already configured device: %s (%s)",
-                    device.name,
-                    device.address,
-                )
-                continue  # Skip already configured devices
-
-            manufacturer_data = device.details["props"].get("ManufacturerData", {})
-            raw_data = manufacturer_data.get(0x0409)  # 0x0409 == 1033
-            if raw_data is not None:
-                btctlMfgdata0 = await get_first_manufacturer_data_byte(device.address)
-                _LOGGER.debug(
-                    "Found RYSE Device in Pairing mode: %s - address: %s - btctlMfgdata0 %02X",
-                    device.name,
-                    device.address,
-                    btctlMfgdata0,
-                )
-                # Check if the pairing mode flag (0x40) is in the first byte
-                if (
-                    len(raw_data) > 0
-                    and btctlMfgdata0 is not None
-                    and (btctlMfgdata0 & 0x40)
-                ):
-                    self.device_options[device.address] = (
-                        f"{device.name} ({device.address})"
-                    )
+        self.device_options = await filter_ryse_devices_pairing(devices, existing_addresses)
 
         if not self.device_options:
-            _LOGGER.warning("No BLE devices found in pairing mode (0x40).")
+            _LOGGER.warning("No BLE devices found in pairing mode.")
             return self.async_abort(reason="No RYSE devices found in pairing mode!")
 
         # Show device selection form
