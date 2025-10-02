@@ -7,6 +7,7 @@ from ryseble.device import RyseBLEDevice
 
 _LOGGER = logging.getLogger(__name__)
 
+
 async def async_setup_entry(hass, entry, async_add_entities):
     device = RyseBLEDevice(
         entry.data["address"],
@@ -14,6 +15,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
         entry.data["tx_uuid"],
     )
     async_add_entities([SmartShadeCover(device)])
+
 
 class SmartShadeCover(CoverEntity):
     def __init__(self, device):
@@ -91,8 +93,10 @@ class SmartShadeCover(CoverEntity):
         if self._current_position is None:
             return 50
         if not (0 <= self._current_position <= 100):
-            _LOGGER.warning("Invalid position value detected: %02X",
-                            self._current_position)
+            _LOGGER.warning(
+                "Invalid position value detected: %02X",
+                self._current_position,
+            )
             return 50  # Prevent invalid values
         return int(self._current_position)
 
