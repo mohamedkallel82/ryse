@@ -49,19 +49,19 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if not selected_device:
                 return self.async_abort(reason="Invalid selected device!")
 
-            device_name = selected_device.split(" (")[
-                0
-            ]  # Extract device name before "("
+            device_name = selected_device.split(" (")[0]
             device_address = user_input["device_address"]
 
             try:
-                _LOGGER.debug(f"Attempting to pair with BLE device: {device_name} ({device_address})")
+                _LOGGER.debug("Attempting to pair with BLE device: %s (%s)",
+                              device_name, device_address)
 
                 success = await pair_with_ble_device(device_name, device_address)
                 if not success:
                     return self.async_abort(reason="Pairing failed!")
 
-                _LOGGER.debug(f"Successfully Connected and Bonded with BLE device: {device_name} ({device_address})")
+                _LOGGER.debug("Successfully Connected and Bonded with BLE device: %s (%s)",
+                              device_name, device_address)
                 # Create entry after successful pairing
                 return self.async_create_entry(
                     title=f"RYSE gear {device_name}",
@@ -72,7 +72,8 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
 
             except Exception as e:
-                _LOGGER.error(f"Error during pairing process for BLE device: {device_name} ({device_address}): {e}")
+                _LOGGER.error("Error during pairing process for BLE device: %s (%s): %s",
+                              device_name, device_address, e)
                 return self.async_abort(reason="Pairing failed!")
 
         # Scan for BLE devices
@@ -80,7 +81,8 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         # Debug: Log all discovered devices
         for device in devices:
-            _LOGGER.debug(f"Device Name: {device.name} - Device Address: {device.address}")
+            _LOGGER.debug("Device Name: %s - Device Address: %s",
+                          device.name, device.address)
 
         # Get existing entries to exclude already configured devices
         existing_entries = self._async_current_entries()

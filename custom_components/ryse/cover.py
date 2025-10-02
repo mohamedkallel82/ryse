@@ -9,7 +9,9 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass, entry, async_add_entities):
     device = RyseBLEDevice(
-        entry.data["address"], entry.data["rx_uuid"], entry.data["tx_uuid"]
+        entry.data["address"],
+        entry.data["rx_uuid"],
+        entry.data["tx_uuid"],
     )
     async_add_entities([SmartShadeCover(device)])
 
@@ -39,7 +41,7 @@ class SmartShadeCover(CoverEntity):
         if 0 <= position <= 100:
             self._current_position = 100 - position
             self._state = "open" if position < 100 else "closed"
-            _LOGGER.debug(f"Updated cover position: {position}")
+            _LOGGER.debug("Updated cover position: %02X", position)
         self.async_write_ha_state()  # Notify Home Assistant about the state change
 
     async def async_open_cover(self, **kwargs):
@@ -77,7 +79,7 @@ class SmartShadeCover(CoverEntity):
                 bytesinfo = build_get_position_packet()
                 await self._device.write_data(bytesinfo)
         except Exception as e:
-            _LOGGER.error(f"Error reading device data: {e}")
+            _LOGGER.error("Error reading device data: %s", e)
 
     @property
     def is_closed(self):
@@ -89,7 +91,8 @@ class SmartShadeCover(CoverEntity):
         if self._current_position is None:
             return 50
         if not (0 <= self._current_position <= 100):
-            _LOGGER.warning(f"Invalid position value detected: {self._current_position}")
+            _LOGGER.warning("Invalid position value detected: %02X",
+                            self._current_position)
             return 50  # Prevent invalid values
         return int(self._current_position)
 
