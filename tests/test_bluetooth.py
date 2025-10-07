@@ -1,19 +1,24 @@
-import pytest
+"""Tests for the Ryse Bluetooth."""
+
 from unittest.mock import AsyncMock, patch
+
+import pytest
 from ryseble.device import RyseBLEDevice
+
 
 @pytest.fixture
 def mock_ble_client():
     """Mock the BleakClient for BLE communication."""
-    with patch("custom_components.ryse.bluetooth.BleakClient") as mock_client:
+    with patch("components.ryse.bluetooth.BleakClient") as mock_client:
         instance = mock_client.return_value
         instance.connect = AsyncMock(return_value=True)
         instance.start_notify = AsyncMock()
-        instance.read_gatt_char = AsyncMock(return_value=b"\xF5\x03\x01\x01\x64")
+        instance.read_gatt_char = AsyncMock(return_value=b"\xf5\x03\x01\x01\x64")
         instance.write_gatt_char = AsyncMock()
         instance.disconnect = AsyncMock()
         instance.is_connected = True
         yield instance
+
 
 @pytest.mark.asyncio
 async def test_device_pairing(mock_ble_client):
@@ -24,6 +29,7 @@ async def test_device_pairing(mock_ble_client):
     assert paired is True
     mock_ble_client.connect.assert_called_once()
 
+
 @pytest.mark.asyncio
 async def test_read_data(mock_ble_client):
     """Test reading data from BLE device."""
@@ -31,7 +37,8 @@ async def test_read_data(mock_ble_client):
     await device.pair()
 
     data = await device.read_data()
-    assert data == b"\xF5\x03\x01\x01\x64"
+    assert data == b"\xf5\x03\x01\x01\x64"
+
 
 @pytest.mark.asyncio
 async def test_write_data(mock_ble_client):
@@ -39,5 +46,5 @@ async def test_write_data(mock_ble_client):
     device = RyseBLEDevice("AA:BB:CC:DD:EE:FF", "rx_uuid", "tx_uuid")
     await device.pair()
 
-    await device.write_data(b"\xF5\x03\x01\x01\x64")
+    await device.write_data(b"\xf5\x03\x01\x01\x64")
     mock_ble_client.write_gatt_char.assert_called_once()

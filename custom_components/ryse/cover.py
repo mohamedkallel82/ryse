@@ -1,14 +1,17 @@
+"""Support for RYSE Smart Shades via BLE."""
+
 import logging
 
-from homeassistant.components.cover import CoverEntity, CoverEntityFeature
-
-from ryseble.packets import build_position_packet, build_get_position_packet
 from ryseble.device import RyseBLEDevice
+from ryseble.packets import build_get_position_packet, build_position_packet
+
+from homeassistant.components.cover import CoverEntity, CoverEntityFeature
 
 _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
+    """Set up RYSE Smart Shade cover from a config entry."""
     device = RyseBLEDevice(
         entry.data["address"],
         entry.data["rx_uuid"],
@@ -18,7 +21,9 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
 
 class SmartShadeCover(CoverEntity):
+    """Representation of a RYSE Smart Shade BLE cover entity."""
     def __init__(self, device):
+        """Initialize the Smart Shade cover entity."""
         self._device = device
         self._attr_name = f"Smart Shade {device.address}"
         self._attr_unique_id = f"smart_shade_{device.address}"
@@ -30,6 +35,7 @@ class SmartShadeCover(CoverEntity):
 
     @property
     def device_info(self):
+        """Return device information for Home Assistant device registry."""
         return {
             "identifiers": {(self._device.address,)},
             "name": f"Smart Shade {self._device.address}",
@@ -80,11 +86,14 @@ class SmartShadeCover(CoverEntity):
             if self._current_position is None:
                 bytesinfo = build_get_position_packet()
                 await self._device.write_data(bytesinfo)
-        except Exception as e:
-            _LOGGER.error("Error reading device data: %s", e)
+        except (TimeoutError, OSError) as err:
+            _LOGGER.error("BLE communication error while reading device data: %s", err)
+        except Exception:
+            _LOGGER.exception("Unexpected error while reading device data")
 
     @property
     def is_closed(self):
+        """Return True if the shade is closed."""
         return self._state == "closed"
 
     @property
@@ -102,6 +111,7 @@ class SmartShadeCover(CoverEntity):
 
     @property
     def supported_features(self):
+        """Return supported features for the cover entity."""
         return (
             CoverEntityFeature.OPEN
             | CoverEntityFeature.CLOSE

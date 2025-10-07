@@ -1,14 +1,14 @@
-import voluptuous as vol
+"""Config flow for RYSE integration."""
+
 import logging
+
 from bleak import BleakScanner
+from bleak.exc import BleakError
+from ryseble.bluetoothctl import filter_ryse_devices_pairing, pair_with_ble_device
+from ryseble.constants import HARDCODED_UUIDS
+import voluptuous as vol
 
 from homeassistant import config_entries
-
-from ryseble.bluetoothctl import (
-    pair_with_ble_device,
-    filter_ryse_devices_pairing,
-)
-from ryseble.constants import HARDCODED_UUIDS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -78,14 +78,22 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     },
                 )
 
-            except Exception as e:
+            except (BleakError, TimeoutError, OSError, ValueError) as err:
                 _LOGGER.error(
-                    "Error during pairing process for BLE device: %s (%s): %s",
+                    "BLE pairing failed for device %s (%s): %s",
                     device_name,
                     device_address,
-                    e,
+                    err,
                 )
-                return self.async_abort(reason="Pairing failed!")
+                return self.async_abort(reason="pairing_failed")
+
+            except Exception:
+                _LOGGER.exception(
+                    "Unexpected error during pairing for device %s (%s)",
+                    device_name,
+                    device_address,
+                )
+                return self.async_abort(reason="unexpected_error")
 
         # Scan for BLE devices
         devices = await BleakScanner.discover()

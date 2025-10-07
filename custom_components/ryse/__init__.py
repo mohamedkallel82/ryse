@@ -1,9 +1,9 @@
+"""The RYSE integration."""
+
 import logging
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-
-from ryseble.device import RyseBLEDevice
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -20,12 +20,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Set up RYSE from a config entry."""
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = entry
-
-    device = RyseBLEDevice(
-        address=entry.data["address"],
-        rx_uuid=entry.data["rx_uuid"],
-        tx_uuid=entry.data["tx_uuid"],
-    )
 
     await hass.config_entries.async_forward_entry_setups(entry, ["cover"])
 
