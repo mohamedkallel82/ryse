@@ -1,4 +1,4 @@
-"""Tests for the Ryse Smart Shade integration."""
+"""Tests for the Ryse Cover integration."""
 
 from unittest.mock import AsyncMock, patch
 
@@ -6,6 +6,7 @@ import pytest
 
 from homeassistant.components.cover import STATE_CLOSED, STATE_OPEN
 from homeassistant.components.ryse.cover import SmartShadeCover
+from homeassistant.core import HomeAssistant
 
 
 @pytest.fixture
@@ -20,7 +21,7 @@ def mock_ble_device():
 
 
 @pytest.mark.asyncio
-async def test_cover_open(mock_ble_device, hass):
+async def test_cover_open(mock_ble_device, hass: HomeAssistant) -> None:
     """Test opening the cover."""
     cover = SmartShadeCover(mock_ble_device)
 
@@ -30,7 +31,7 @@ async def test_cover_open(mock_ble_device, hass):
 
 
 @pytest.mark.asyncio
-async def test_cover_close(mock_ble_device, hass):
+async def test_cover_close(mock_ble_device, hass: HomeAssistant) -> None:
     """Test closing the cover."""
     cover = SmartShadeCover(mock_ble_device)
 

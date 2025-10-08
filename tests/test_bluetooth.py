@@ -21,7 +21,7 @@ def mock_ble_client():
 
 
 @pytest.mark.asyncio
-async def test_device_pairing(mock_ble_client):
+async def test_device_pairing(mock_ble_client) -> None:
     """Test BLE device pairing."""
     device = RyseBLEDevice("AA:BB:CC:DD:EE:FF", "rx_uuid", "tx_uuid")
     paired = await device.pair()
@@ -31,7 +31,7 @@ async def test_device_pairing(mock_ble_client):
 
 
 @pytest.mark.asyncio
-async def test_read_data(mock_ble_client):
+async def test_read_data(mock_ble_client) -> None:
     """Test reading data from BLE device."""
     device = RyseBLEDevice("AA:BB:CC:DD:EE:FF", "rx_uuid", "tx_uuid")
     await device.pair()
@@ -41,7 +41,7 @@ async def test_read_data(mock_ble_client):
 
 
 @pytest.mark.asyncio
-async def test_write_data(mock_ble_client):
+async def test_write_data(mock_ble_client) -> None:
     """Test sending data to BLE device."""
     device = RyseBLEDevice("AA:BB:CC:DD:EE:FF", "rx_uuid", "tx_uuid")
     await device.pair()

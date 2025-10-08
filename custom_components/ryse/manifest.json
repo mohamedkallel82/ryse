@@ -6,7 +6,7 @@
   "dependencies": ["bluetooth_adapters"],
   "integration_type": "device",
   "codeowners": ["@mohamedkalel82"],
-  "requirements": ["bleak", "ryseble>=1.5.0"],
+  "requirements": ["bleak", "ryseble==1.5.0"],
   "iot_class": "local_push",
   "config_flow": true,
   "bluetooth": [],
