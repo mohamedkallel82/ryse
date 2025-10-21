@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from homeassistant.components.cover import STATE_CLOSED, STATE_OPEN
 from homeassistant.components.ryse.cover import SmartShadeCover
+from homeassistant.const import STATE_CLOSED, STATE_OPEN
 from homeassistant.core import HomeAssistant
 
 

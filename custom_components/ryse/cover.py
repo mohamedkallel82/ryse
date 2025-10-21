@@ -125,4 +125,3 @@ class SmartShadeCover(CoverEntity):
             | CoverEntityFeature.CLOSE
             | CoverEntityFeature.SET_POSITION
         )
-

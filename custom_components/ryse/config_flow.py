@@ -125,4 +125,3 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             ),
             description_placeholders={"info": "Select a RYSE BLE device to pair"},
         )
-
