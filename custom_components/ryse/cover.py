@@ -23,11 +23,7 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up RYSE Smart Shade cover from a config entry."""
-    device = RyseBLEDevice(
-        entry.data[CONF_ADDRESS],
-        entry.data[CONF_RX_UUID],
-        entry.data[CONF_TX_UUID],
-    )
+    device = RyseBLEDevice(entry.unique_id)
     async_add_entities([SmartShadeCover(device)])
 
 
@@ -119,10 +115,7 @@ class SmartShadeCover(CoverEntity):
             return 50
         return int(self._current_position)
 
-    @property
-    def supported_features(self) -> CoverEntityFeature:
-        """Return supported features for the cover entity."""
-        return (
+    _attr_supported_features = (
             CoverEntityFeature.OPEN
             | CoverEntityFeature.CLOSE
             | CoverEntityFeature.SET_POSITION
