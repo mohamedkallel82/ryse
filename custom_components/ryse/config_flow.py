@@ -4,7 +4,6 @@ import logging
 
 from bleak.exc import BleakError
 from ryseble.bluetoothctl import filter_ryse_devices_pairing, pair_with_ble_device
-from ryseble.constants import HARDCODED_UUIDS
 import voluptuous as vol
 
 from homeassistant import config_entries
@@ -42,7 +41,7 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 None,
             )
             if not selected_device:
-                return self.async_abort(reason="invalid_selected_device")
+                return self.async_abort(reason="Invalid selected device")
 
             device_name = selected_device.split(" (")[0]
 
@@ -60,7 +59,7 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         device_name,
                         device_address,
                     )
-                    return self.async_abort(reason="pairing_failed")
+                    return self.async_abort(reason="Pairing failed")
 
                 _LOGGER.debug(
                     "Successfully connected and bonded with BLE device: %s (%s)",
@@ -69,7 +68,7 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
                 return self.async_create_entry(
                     title=f"RYSE gear {device_name}",
-                    data={"address": device_address, **HARDCODED_UUIDS},
+                    data={"address": device_address},
                 )
 
             except (BleakError, TimeoutError, OSError) as err:
@@ -79,7 +78,7 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     device_address,
                     err,
                 )
-                return self.async_abort(reason="bluetooth_error")
+                return self.async_abort(reason="Bluetooth error")
 
             except Exception:
                 _LOGGER.exception(
@@ -87,7 +86,7 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     device_name,
                     device_address,
                 )
-                return self.async_abort(reason="unexpected_error")
+                return self.async_abort(reason="Unexpected error")
 
         # Use HA’s built-in Bluetooth discovery instead of scanning manually
         service_infos = async_discovered_service_info(self.hass)
@@ -111,7 +110,8 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if not self.device_options:
             _LOGGER.warning("No BLE devices found in pairing mode")
-            return self.async_abort(reason="no_ryse_devices_found")
+            return self.async_abort(reason="No RYSE devices in pairing mode found, " \
+                                            "Please Press PAIR button on the RYSE device and then retry")
 
         return self.async_show_form(
             step_id="scan",
