@@ -6,7 +6,7 @@ from typing import Any
 from ryseble.device import RyseBLEDevice
 from ryseble.packets import build_get_position_packet, build_position_packet
 
-from homeassistant.components.cover import CoverEntity, CoverEntityFeature
+from homeassistant.components.cover import CoverEntity, CoverEntityFeature, ATTR_POSITION
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -31,12 +31,13 @@ async def async_setup_entry(
 
 class RyseCoverEntity(CoverEntity):
     """Representation of a RYSE Smart Shade BLE cover entity."""
+    _attr_has_entity_name = True
+    _attr_name = None
 
     def __init__(self, device: RyseBLEDevice) -> None:
         """Initialize the Smart Shade cover entity."""
         self._device = device
-        self._attr_name = f"Smart Shade {device.address}"
-        self._attr_unique_id = f"smart_shade_{device.address}"
+        self._attr_unique_id = f"{device.address}_cover"
         self._state: str | None = None
         self._current_position: int | None = None
         self._device.update_callback = self._update_position
@@ -76,7 +77,7 @@ class RyseCoverEntity(CoverEntity):
 
     async def async_set_cover_position(self, **kwargs: Any) -> None:
         """Set the shade to a specific position."""
-        position = 100 - kwargs.get("position", 0)
+        position = 100 - kwargs.get(ATTR_POSITION, 0)
         pdata = build_position_packet(position)
         await self._device.write_data(pdata)
         _LOGGER.debug("Binary packet to change position to a specific position")
