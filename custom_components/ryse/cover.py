@@ -87,8 +87,12 @@ class RyseCoverEntity(CoverEntity):
         if not self._device.client or not self._device.client.is_connected:
             paired = await self._device.pair()
             if not paired:
-                _LOGGER.warning("Failed to pair with device, skipping update")
+                if self._attr_available:
+                    _LOGGER.debug("Failed to pair with device, skipping update")
+                self._attr_available = False
                 return
+        else:
+            self._attr_available = True
 
         try:
             if self._current_position is None:
