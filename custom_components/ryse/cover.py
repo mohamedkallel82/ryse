@@ -38,7 +38,6 @@ class RyseCoverEntity(CoverEntity):
         """Initialize the Smart Shade cover entity."""
         self._device = device
         self._attr_unique_id = f"{device.address}_cover"
-        self._state: str | None = None
         self._current_position: int | None = None
         self._device.update_callback = self._update_position
 
@@ -57,7 +56,7 @@ class RyseCoverEntity(CoverEntity):
         """Update cover position when receiving notification."""
         if 0 <= position <= 100:
             self._current_position = 100 - position
-            self._state = "open" if position < 100 else "closed"
+            self._attr_is_closed = position == 100
             _LOGGER.debug("Updated cover position: %02X", position)
         self.async_write_ha_state()
 
@@ -66,14 +65,14 @@ class RyseCoverEntity(CoverEntity):
         pdata = build_position_packet(0x00)
         await self._device.write_data(pdata)
         _LOGGER.debug("Binary packet to change position to open")
-        self._state = "open"
+        self._attr_is_closed = False
 
     async def async_close_cover(self, **kwargs: Any) -> None:
         """Close the shade."""
         pdata = build_position_packet(0x64)
         await self._device.write_data(pdata)
         _LOGGER.debug("Binary packet to change position to close")
-        self._state = "closed"
+        self._attr_is_closed = True
 
     async def async_set_cover_position(self, **kwargs: Any) -> None:
         """Set the shade to a specific position."""
@@ -81,7 +80,7 @@ class RyseCoverEntity(CoverEntity):
         pdata = build_position_packet(position)
         await self._device.write_data(pdata)
         _LOGGER.debug("Binary packet to change position to a specific position")
-        self._state = "open" if position < 100 else "closed"
+        self._attr_is_closed = position == 100
 
     async def async_update(self) -> None:
         """Fetch the current state and position from the device."""
@@ -103,19 +102,19 @@ class RyseCoverEntity(CoverEntity):
     @property
     def is_closed(self) -> bool | None:
         """Return True if the shade is closed."""
-        return self._state == "closed"
+        return self._attr_is_closed
 
     @property
     def current_cover_position(self) -> int | None:
         """Return current cover position."""
         if self._current_position is None:
-            return 50
+            return None
         if not (0 <= self._current_position <= 100):
             _LOGGER.warning(
                 "Invalid position value detected: %02X",
                 self._current_position,
             )
-            return 50
+            return None
         return int(self._current_position)
 
     _attr_supported_features = (
