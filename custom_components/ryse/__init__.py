@@ -8,8 +8,6 @@ from homeassistant.const import Platform
 
 _LOGGER = logging.getLogger(__name__)
 
-DOMAIN = "ryse"
-
 
 PLATFORMS = [Platform.COVER]
 
