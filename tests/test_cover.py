@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from homeassistant.components.ryse.cover import SmartShadeCover
+from homeassistant.components.ryse.cover import RyseCoverEntity
 from homeassistant.const import STATE_CLOSED, STATE_OPEN
 from homeassistant.core import HomeAssistant
 
@@ -23,7 +23,7 @@ def mock_ble_device():
 @pytest.mark.asyncio
 async def test_cover_open(mock_ble_device, hass: HomeAssistant) -> None:
     """Test opening the cover."""
-    cover = SmartShadeCover(mock_ble_device)
+    cover = RyseCoverEntity(mock_ble_device)
 
     await cover.async_open_cover()
     mock_ble_device.write_data.assert_called_once()
@@ -33,7 +33,7 @@ async def test_cover_open(mock_ble_device, hass: HomeAssistant) -> None:
 @pytest.mark.asyncio
 async def test_cover_close(mock_ble_device, hass: HomeAssistant) -> None:
     """Test closing the cover."""
-    cover = SmartShadeCover(mock_ble_device)
+    cover = RyseCoverEntity(mock_ble_device)
 
     await cover.async_close_cover()
     mock_ble_device.write_data.assert_called_once()

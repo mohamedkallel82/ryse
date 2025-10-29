@@ -26,10 +26,10 @@ async def async_setup_entry(
     device = RyseBLEDevice(
         entry.data[CONF_ADDRESS],
     )
-    async_add_entities([SmartShadeCover(device)])
+    async_add_entities([RyseCoverEntity(device)])
 
 
-class SmartShadeCover(CoverEntity):
+class RyseCoverEntity(CoverEntity):
     """Representation of a RYSE Smart Shade BLE cover entity."""
 
     def __init__(self, device: RyseBLEDevice) -> None:
