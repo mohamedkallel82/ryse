@@ -4,7 +4,6 @@ import logging
 from typing import Any
 
 from ryseble.device import RyseBLEDevice
-from ryseble.packets import build_get_position_packet, build_position_packet
 
 from homeassistant.components.cover import CoverEntity, CoverEntityFeature, ATTR_POSITION
 from homeassistant.config_entries import ConfigEntry
@@ -62,24 +61,21 @@ class RyseCoverEntity(CoverEntity):
 
     async def async_open_cover(self, **kwargs: Any) -> None:
         """Open the shade."""
-        pdata = build_position_packet(0x00)
-        await self._device.write_data(pdata)
-        _LOGGER.debug("Binary packet to change position to open")
+        await self._device.set_position(0x00)
+        _LOGGER.debug("Change position to open")
         self._attr_is_closed = False
 
     async def async_close_cover(self, **kwargs: Any) -> None:
         """Close the shade."""
-        pdata = build_position_packet(0x64)
-        await self._device.write_data(pdata)
-        _LOGGER.debug("Binary packet to change position to close")
+        await self._device.set_position(0x64)
+        _LOGGER.debug("Change position to close")
         self._attr_is_closed = True
 
     async def async_set_cover_position(self, **kwargs: Any) -> None:
         """Set the shade to a specific position."""
         position = 100 - kwargs.get(ATTR_POSITION, 0)
-        pdata = build_position_packet(position)
-        await self._device.write_data(pdata)
-        _LOGGER.debug("Binary packet to change position to a specific position")
+        await self._device.set_position(position)
+        _LOGGER.debug("Change position to a specific position")
         self._attr_is_closed = position == 100
 
     async def async_update(self) -> None:
@@ -96,8 +92,7 @@ class RyseCoverEntity(CoverEntity):
 
         try:
             if self._current_position is None:
-                bytesinfo = build_get_position_packet()
-                await self._device.write_data(bytesinfo)
+                await self._device.get_position()
         except (TimeoutError, OSError) as err:
             _LOGGER.error("BLE communication error while reading device data: %s", err)
         except Exception:
