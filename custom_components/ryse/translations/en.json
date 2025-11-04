@@ -3,11 +3,11 @@
         "step": {
             "user": {
                 "title": "Pairing RYSE device",
-                "description": "Please press PAIR button on RYSE device and then OK",
+                "description": "Please press PAIR button on RYSE device and then Submit",
                 "data": {
                     "device_address": "RYSE devices"
                 },
-                "submit": "OK"
+                "submit": "Submit"
             },
             "scan": {
                 "title": "Pairing RYSE device",
