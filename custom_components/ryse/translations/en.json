@@ -15,7 +15,16 @@
                     "device_address": "RYSE Devices:"
                 },
                 "submit": "PAIR"
+            },
+            "pairing_search": {
+                "title": "Search for RYSE Devices",
+                "description": "No RYSE devices in pairing mode found. Please press the PAIR button and try again."
+            },
+            "pair": {
+                "title": "Pairing RYSE Device",
+                "description": "Pairing failed. Please press the PAIR button and try again."
             }
+
         },
         "error": {
             "no_devices_found": "No RYSE BLE gear found."

@@ -12,9 +12,17 @@
       "scan": {
         "title": "Pairing RYSE device",
         "data": {
-          "device_address": "RYSE devices:"
+          "device_address": "RYSE Devices:"
         },
         "submit": "PAIR"
+      },
+      "pairing_search": {
+        "title": "Search for RYSE Devices",
+        "description": "No RYSE devices in pairing mode found. Please press the PAIR button and try again."
+      },
+      "pair": {
+        "title": "Pairing RYSE Device",
+        "description": "Pairing failed. Please press the PAIR button and try again."
       }
     },
     "error": {

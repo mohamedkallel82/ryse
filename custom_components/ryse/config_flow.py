@@ -49,7 +49,10 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         device_options = await filter_ryse_devices_pairing(devices, existing_addresses)
         if not device_options:
             _LOGGER.info("No RYSE devices in pairing mode found.")
-            return self.async_abort(reason="No pairing device found")
+            return self.async_show_form(
+                step_id="pairing_search",
+                data_schema=vol.Schema({}),
+            )
 
         self.context["device_options"] = device_options
         return await self.async_step_select_device()
@@ -91,7 +94,10 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             success = await pair_with_ble_device(name, address)
             if not success:
                 _LOGGER.warning("Pairing failed for %s (%s)", name, address)
-                return self.async_abort(reason="Pairing failed")
+                return self.async_show_form(
+                    step_id="pair",
+                    data_schema=vol.Schema({}),
+                )
 
             _LOGGER.info("Successfully paired with RYSE device %s (%s)", name, address)
             return self.async_create_entry(
