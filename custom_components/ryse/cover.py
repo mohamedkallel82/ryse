@@ -53,30 +53,30 @@ class RyseCoverEntity(CoverEntity):
 
     async def _update_position(self, position: int) -> None:
         """Update cover position when receiving notification."""
-        if 0 <= position <= 100:
-            self._current_position = 100 - position
-            self._attr_is_closed = position == 100
+        if (self._device.is_valid_position(position)):
+            self._current_position = self._device.get_real_position(position)
+            self._attr_is_closed = self._device.is_closed(position)
             _LOGGER.debug("Updated cover position: %02X", position)
         self.async_write_ha_state()
 
     async def async_open_cover(self, **kwargs: Any) -> None:
         """Open the shade."""
-        await self._device.set_position(0x00)
+        await self._device.send_open()
         _LOGGER.debug("Change position to open")
         self._attr_is_closed = False
 
     async def async_close_cover(self, **kwargs: Any) -> None:
         """Close the shade."""
-        await self._device.set_position(0x64)
+        await self._device.send_close()
         _LOGGER.debug("Change position to close")
         self._attr_is_closed = True
 
     async def async_set_cover_position(self, **kwargs: Any) -> None:
         """Set the shade to a specific position."""
-        position = 100 - kwargs.get(ATTR_POSITION, 0)
-        await self._device.set_position(position)
+        position = self._device.get_real_position(kwargs.get(ATTR_POSITION, 0))
+        await self._device.send_set_position(position)
         _LOGGER.debug("Change position to a specific position")
-        self._attr_is_closed = position == 100
+        self._attr_is_closed = self._device.is_closed(position)
 
     async def async_update(self) -> None:
         """Fetch the current state and position from the device."""
@@ -92,7 +92,7 @@ class RyseCoverEntity(CoverEntity):
 
         try:
             if self._current_position is None:
-                await self._device.get_position()
+                await self._device.send_get_position()
         except (TimeoutError, OSError) as err:
             _LOGGER.error("BLE communication error while reading device data: %s", err)
         except Exception:
@@ -108,7 +108,7 @@ class RyseCoverEntity(CoverEntity):
         """Return current cover position."""
         if self._current_position is None:
             return None
-        if not (0 <= self._current_position <= 100):
+        if not (self._device.is_valid_position(self._current_position)):
             _LOGGER.warning(
                 "Invalid position value detected: %02X",
                 self._current_position,
