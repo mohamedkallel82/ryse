@@ -1,32 +1,32 @@
 {
   "config": {
+    "error": {
+      "no_devices_found": "No RYSE BLE gear found."
+    },
     "step": {
-      "user": {
-        "title": "Pairing RYSE device",
-        "description": "Please press the PAIR button on the RYSE device and then press Submit.",
-        "data": {
-          "device_address": "RYSE devices"
-        },
-        "submit": "Submit"
+      "pair": {
+        "description": "Pairing failed. Please press the PAIR button and try again.",
+        "title": "Pairing RYSE Device"
+      },
+      "pairing_search": {
+        "description": "No RYSE devices in pairing mode found. Please press the PAIR button and try again.",
+        "title": "Search for RYSE Devices"
       },
       "scan": {
-        "title": "Pairing RYSE device",
         "data": {
           "device_address": "RYSE Devices:"
         },
-        "submit": "PAIR"
+        "submit": "PAIR",
+        "title": "Pairing RYSE device"
       },
-      "pairing_search": {
-        "title": "Search for RYSE Devices",
-        "description": "No RYSE devices in pairing mode found. Please press the PAIR button and try again."
-      },
-      "pair": {
-        "title": "Pairing RYSE Device",
-        "description": "Pairing failed. Please press the PAIR button and try again."
+      "user": {
+        "data": {
+          "device_address": "RYSE devices"
+        },
+        "description": "Please press the PAIR button on the RYSE device and then press Submit.",
+        "submit": "Submit",
+        "title": "Pairing RYSE device"
       }
-    },
-    "error": {
-      "no_devices_found": "No RYSE BLE gear found."
     }
   }
 }

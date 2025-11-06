@@ -5,7 +5,11 @@ from typing import Any
 
 from ryseble.device import RyseBLEDevice
 
-from homeassistant.components.cover import CoverEntity, CoverEntityFeature, ATTR_POSITION
+from homeassistant.components.cover import (
+    ATTR_POSITION,
+    CoverEntity,
+    CoverEntityFeature,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -30,6 +34,7 @@ async def async_setup_entry(
 
 class RyseCoverEntity(CoverEntity):
     """Representation of a RYSE Smart Shade BLE cover entity."""
+
     _attr_has_entity_name = True
     _attr_name = None
 
@@ -54,7 +59,7 @@ class RyseCoverEntity(CoverEntity):
 
     async def _update_position(self, position: int) -> None:
         """Update cover position when receiving notification."""
-        if (self._device.is_valid_position(position)):
+        if self._device.is_valid_position(position):
             self._current_position = self._device.get_real_position(position)
             self._attr_is_closed = self._device.is_closed(position)
             _LOGGER.debug("Updated cover position: %02X", position)
@@ -118,7 +123,7 @@ class RyseCoverEntity(CoverEntity):
         return int(self._current_position)
 
     _attr_supported_features = (
-            CoverEntityFeature.OPEN
-            | CoverEntityFeature.CLOSE
-            | CoverEntityFeature.SET_POSITION
-        )
+        CoverEntityFeature.OPEN
+        | CoverEntityFeature.CLOSE
+        | CoverEntityFeature.SET_POSITION
+    )

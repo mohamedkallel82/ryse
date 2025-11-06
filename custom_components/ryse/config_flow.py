@@ -1,15 +1,15 @@
 """Config flow for RYSE BLE integration."""
 
 import logging
+from typing import Any
 
+from ryseble.bluetoothctl import filter_ryse_devices_pairing, pair_with_ble_device
 import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.components.bluetooth import async_discovered_service_info
-
 from homeassistant.config_entries import ConfigFlowResult
 
-from ryseble.bluetoothctl import filter_ryse_devices_pairing, pair_with_ble_device
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -20,14 +20,21 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
-    async def async_step_user(self, user_input=None) -> ConfigFlowResult:
+    def __init__(self) -> None:
+        """Initialize flow attributes."""
+        self.device_options: dict[str, str] = {}
+        self.selected_device: dict[str, str] | None = None
+
+    async def async_step_user(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Triggered when user clicks 'Add Integration'."""
         if user_input is None:
             _LOGGER.debug("User started RYSE setup flow")
             return self.async_show_form(
                 step_id="user",
                 description_placeholders={
-                    "instruction": "Press the PAIR button on your RYSE device, then Submit."
+                    "instruction": "Press the PAIR button on your RYSE device, then Submit"
                 },
                 data_schema=vol.Schema({}),
             )
@@ -35,9 +42,11 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         _LOGGER.debug("User submitted pairing search trigger")
         return await self.async_step_pairing_search()
 
-    async def async_step_pairing_search(self, user_input=None) -> ConfigFlowResult:
+    async def async_step_pairing_search(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Check already discovered BLE devices for pairing mode."""
-        _LOGGER.info("Checking already discovered BLE devices for RYSE in pairing mode...")
+        _LOGGER.info("Checking already discovered BLE devices for RYSE in pairing mode")
 
         devices = async_discovered_service_info(self.hass)
         existing_addresses = {
@@ -48,18 +57,20 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         device_options = await filter_ryse_devices_pairing(devices, existing_addresses)
         if not device_options:
-            _LOGGER.info("No RYSE devices in pairing mode found.")
+            _LOGGER.info("No RYSE devices in pairing mode found")
             return self.async_show_form(
                 step_id="pairing_search",
                 data_schema=vol.Schema({}),
             )
 
-        self.context["device_options"] = device_options
+        self.device_options = device_options
         return await self.async_step_select_device()
 
-    async def async_step_select_device(self, user_input=None) -> ConfigFlowResult:
+    async def async_step_select_device(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Let user select one of the discovered pairing devices."""
-        device_options = self.context.get("device_options", {})
+        device_options = getattr(self, "device_options", {})
 
         if user_input is None:
             return self.async_show_form(
@@ -78,13 +89,19 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._abort_if_unique_id_configured()
 
         _LOGGER.info("User selected device %s (%s)", name, address)
-        self.context["selected_device"] = {"name": name, "address": address}
 
+        # Store selected device as instance variable
+        self.selected_device = {"name": name, "address": address}
         return await self.async_step_pair()
 
-    async def async_step_pair(self, user_input=None) -> ConfigFlowResult:
+    async def async_step_pair(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Perform BLE pairing."""
-        device = self.context["selected_device"]
+        device = getattr(self, "selected_device", None)
+        if not device:
+            return self.async_abort(reason="device_not_selected")
+
         name = device["name"]
         address = device["address"]
 
@@ -105,10 +122,10 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 data={"address": address},
             )
 
-        except (TimeoutError, OSError) as err:
-            _LOGGER.error("Bluetooth error during pairing: %s", err)
+        except (TimeoutError, OSError):
+            _LOGGER.error("Bluetooth error during pairing")
             return self.async_abort(reason="Bluetooth error")
 
-        except Exception as err:
-            _LOGGER.exception("Unexpected error during pairing: %s", err)
+        except Exception:
+            _LOGGER.exception("Unexpected error during pairing")
             return self.async_abort(reason="Unexpected error")
