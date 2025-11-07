@@ -9,6 +9,7 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.components.bluetooth import async_discovered_service_info
 from homeassistant.config_entries import ConfigFlowResult
+from homeassistant.const import CONF_ADDRESS
 
 from .const import DOMAIN
 
@@ -17,8 +18,6 @@ _LOGGER = logging.getLogger(__name__)
 
 class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle config flow for RYSE BLE Device."""
-
-    VERSION = 1
 
     def __init__(self) -> None:
         """Initialize flow attributes."""
@@ -33,10 +32,6 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             _LOGGER.debug("User started RYSE setup flow")
             return self.async_show_form(
                 step_id="user",
-                description_placeholders={
-                    "instruction": "Press the PAIR button on your RYSE device, then Submit"
-                },
-                data_schema=vol.Schema({}),
             )
 
         _LOGGER.debug("User submitted pairing search trigger")
@@ -48,12 +43,8 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Check already discovered BLE devices for pairing mode."""
         _LOGGER.info("Checking already discovered BLE devices for RYSE in pairing mode")
 
-        devices = async_discovered_service_info(self.hass)
-        existing_addresses = {
-            entry.data["address"]
-            for entry in self._async_current_entries()
-            if "address" in entry.data
-        }
+        devices = async_discovered_service_info(self.hass, connectable=True)
+        existing_addresses = self._async_current_ids(include_ignore=False)
 
         device_options = await filter_ryse_devices_pairing(devices, existing_addresses)
         if not device_options:
@@ -76,12 +67,12 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_show_form(
                 step_id="select_device",
                 data_schema=vol.Schema(
-                    {vol.Required("device"): vol.In(device_options)}
+                    {vol.Required(CONF_ADDRESS): vol.In(device_options)}
                 ),
                 description_placeholders={},
             )
 
-        selected_device = user_input["device"]
+        selected_device = user_input[CONF_ADDRESS]
         address = selected_device.split("(")[-1].rstrip(")")
         name = selected_device.split("(")[0].strip()
 
@@ -113,19 +104,18 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 _LOGGER.warning("Pairing failed for %s (%s)", name, address)
                 return self.async_show_form(
                     step_id="pair",
-                    data_schema=vol.Schema({}),
                 )
 
             _LOGGER.info("Successfully paired with RYSE device %s (%s)", name, address)
             return self.async_create_entry(
-                title=f"RYSE gear {name}",
-                data={"address": address},
+                title=name,
+                data={},
             )
 
         except (TimeoutError, OSError):
             _LOGGER.error("Bluetooth error during pairing")
-            return self.async_abort(reason="Bluetooth error")
+            return self.async_abort(reason="bluetooth_error")
 
         except Exception:
             _LOGGER.exception("Unexpected error during pairing")
-            return self.async_abort(reason="Unexpected error")
+            return self.async_abort(reason="unexpected_error")
