@@ -9,6 +9,10 @@
                 },
                 "submit": "Submit"
             },
+            "bluetooth_confirm": {
+                "title": "Pair your RYSE device",
+                "description": "Please press the PAIR button on your RYSE device, then click Submit to start pairing."
+            },
             "scan": {
                 "title": "Pairing RYSE device",
                 "data": {
