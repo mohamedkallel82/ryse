@@ -21,6 +21,7 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Initialize flow attributes."""
         self.device_options: dict[str, str] = {}
         self.selected_device: dict[str, str] | None = None
+        self._discovery_info: BluetoothServiceInfoBleak | None = None
 
     async def async_step_bluetooth(
         self, discovery_info: BluetoothServiceInfoBleak
@@ -33,7 +34,7 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._discovery_info = discovery_info
 
         return await self.async_step_bluetooth_confirm()
-    
+
     async def async_step_bluetooth_confirm(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
