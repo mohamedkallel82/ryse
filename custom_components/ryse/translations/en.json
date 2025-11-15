@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "Pairing RYSE device",
-                "description": "Please press PAIR button on RYSE device and then Submit",
+                "description": "Please click Submit to start pairing",
                 "data": {
                     "device_address": "RYSE devices"
                 },
@@ -30,8 +30,8 @@
             }
 
         },
-        "error": {
-            "no_devices_found": "No RYSE BLE gear found."
+        "abort": {
+            "no_devices_found": "No RYSE BLE device found in pairing mode. Please Press PAIR button and retry"
         }
     }
 }
