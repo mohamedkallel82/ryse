@@ -1,13 +1,13 @@
 {
   "config": {
-    "error": {
-      "bluetooth_error": "Bluetooth error occurred during pairing. Please ensure the device is in range and try again.",
-      "device_not_selected": "No device selected. Please choose a RYSE device before pairing.",
-      "unexpected_error": "An unexpected error occurred during pairing. Please try again later.",
-      "cannot_connect": "Can not connect."
-    },
     "abort": {
       "no_devices_found": "No RYSE BLE device found in pairing mode. Please Press PAIR button and retry"
+    },
+    "error": {
+      "bluetooth_error": "Bluetooth error occurred during pairing. Please ensure the device is in range and try again.",
+      "cannot_connect": "Can not connect.",
+      "device_not_selected": "No device selected. Please choose a RYSE device before pairing.",
+      "unexpected_error": "An unexpected error occurred during pairing. Please try again later."
     },
     "step": {
       "bluetooth_confirm": {

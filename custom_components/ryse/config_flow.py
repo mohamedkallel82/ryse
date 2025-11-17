@@ -7,7 +7,10 @@ from ryseble.bluetoothctl import is_pairing_ryse_device, pair_with_ble_device
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.components.bluetooth import BluetoothServiceInfoBleak, async_discovered_service_info
+from homeassistant.components.bluetooth import (
+    BluetoothServiceInfoBleak,
+    async_discovered_service_info,
+)
 from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.const import CONF_ADDRESS
 
@@ -68,7 +71,7 @@ class RyseBLEDeviceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             description_placeholders={"name": name},
             errors=errors,
         )
-    
+
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
