@@ -12,9 +12,10 @@ from homeassistant.components.cover import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.device_registry import CONNECTION_BLUETOOTH, DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
-from homeassistant.helpers.device_registry import CONNECTION_BLUETOOTH
+
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -48,10 +49,8 @@ class RyseCoverEntity(CoverEntity):
         self._attr_unique_id = f"{device.address}_cover"
         self._current_position: int | None = None
         self._attr_is_closed: bool | None = None
-
-        # Device info (no callback registration here)
         self._attr_device_info = DeviceInfo(
-            identifiers={("ryse", self._device.address)},
+            identifiers={(DOMAIN, self._device.address)},
             name=config_entry.title,
             manufacturer="RYSE",
             model="SmartShade BLE",
